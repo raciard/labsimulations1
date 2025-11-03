@@ -1,0 +1,64 @@
+# Scenario: Non-Stationary System
+# System with continuously changing demand that never reaches steady-state
+# Creates a trending pattern with increasing user arrival rates over time
+
+SIMULATION_END_TIME: 901600  # 14 days in minutes
+ENABLE_BINNING: true
+BIN_INTERVAL: 1440  # Collect bins every 30 minutes for fine-grained analysis
+
+# Start with lower demand - will be multiplied by time-varying factors
+BASE_USER_ARRIVAL_RATE: 0.08  # Lower base rate
+
+NUM_CARS: 20
+NUM_CHARGING_STATIONS: 5
+NUM_RELOCATORS: 3
+
+# Create strong time-varying demand to prevent steady-state
+# These multipliers create dramatic changes throughout the day
+DEMAND_TIME_MULTIPLIERS:
+  EARLY_MORNING: 0.2    # Very low demand
+  MORNING_RUSH: 3.5     # Very high demand spike
+  MIDDAY: 1.2          # Moderate demand
+  EVENING_RUSH: 3.0     # High demand spike
+  EVENING: 0.4         # Low demand
+
+# Also vary traffic to compound non-stationarity
+TRAFFIC_TIME_MULTIPLIERS:
+  EARLY_MORNING: 0.4
+  MORNING_RUSH: 2.5
+  MIDDAY: 1.2
+  EVENING_RUSH: 2.8
+  EVENING: 0.8
+
+# Tighter resource constraints amplify non-stationary behavior
+CAR_CHARGING_THRESHOLD: 25  # Higher threshold = more cars need charging
+MAX_PICKUP_DISTANCE: 25.0   # Shorter distance = harder to find cars
+USER_MAX_RESERVATION_ATTEMPTS: 5  # More attempts = users persist longer
+
+# Configure traffic zones with strong rush hour effects
+TRAFFIC_ZONES:
+  center:
+    bounds: [30, 30, 70, 70]
+    base_traffic_factor: 2.8
+    description: 'Zona centrale - traffico molto intenso'
+    rush_hour_multiplier: 2.0  # Strong rush hour effect
+  residential_nw:
+    bounds: [0, 50, 30, 100]
+    base_traffic_factor: 1.3
+    description: 'Zona residenziale nord-ovest'
+    rush_hour_multiplier: 1.8
+  residential_ne:
+    bounds: [70, 50, 100, 100]
+    base_traffic_factor: 1.3
+    description: 'Zona residenziale nord-est'
+    rush_hour_multiplier: 1.8
+  industrial:
+    bounds: [0, 0, 50, 30]
+    base_traffic_factor: 1.6
+    description: 'Zona industriale'
+    rush_hour_multiplier: 2.2
+  commercial:
+    bounds: [50, 0, 100, 30]
+    base_traffic_factor: 2.0
+    description: 'Zona commerciale'
+    rush_hour_multiplier: 1.6

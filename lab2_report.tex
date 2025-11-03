@@ -1,0 +1,123 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{booktabs}
+
+\title{\textbf{Computer Systems Laboratory - Lab 2} \\ 
+       Simulation Model for a Car-Sharing System}
+\author{Your Name \\ Student ID: XXXXX}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Purpose of the Laboratory}
+
+The purpose of this laboratory is to develop a simulation model that captures the operational dynamics of a car-sharing system. In such a system, users appear at random locations within an urban area and use a smartphone application to locate and reserve a nearby available car. Once a reservation is successful, the user drives the car to the desired destination and leaves it either in a designated parking area, such as a recharging station, or in any permissible location within the operational zone. 
+
+In addition to user-driven trips, cars can be partially relocated across the city to better align supply with spatial demand imbalances. This relocation mechanism is crucial to maintaining acceptable availability levels throughout the service area.
+
+The simulation model aims to reproduce these interactions with a level of abstraction that balances realism and computational simplicity. The following sections identify the fundamental system parameters, define the main performance indicators, outline the conceptual model design, and describe the data structures required to support the simulation.
+
+\section{Assumptions about the Model}
+In order to create a manageable and effective simulation model for the car-sharing system, several assumptions are made:
+\begin{itemize}
+\item The urban area is represented as a bounded two-dimensional space where users and vehicles can be located.
+\item User arrivals follow a Poisson process, with a constant average rate over the simulation period.
+\item A graph is used to represent the road network, with nodes as locations and edges as possible paths for vehicles, every edge having a weight representing the traffic conditions or travel time, traffic conditions may vary over time.
+\item After a user signup, the user following a poisson process will request a car for a trip to a random destination within the service area, the user will be assigned to the nearest available car, if no car is available within a certain radius the user will leave the system, after making some other attempts.
+\item Vehicles are left charging by special workers called relocators, that will pick up cars with low battery and drive them to the nearest charging station.
+\item A fixed number of charging stations are available in the city, each with a limited number of charging slots.
+\item A fixed fleet size of electric vehicles is used in the system, each vehicle has a maximum battery capacity and a consumption rate per kilometer driven.
+\end{itemize}
+
+
+\section{Key Parameters and Performance Indicators}
+
+The system is characterized by a set of parameters that define its operational configuration and user behavior. These parameters form the foundation upon which the simulation is built and determine the relationships between demand, supply, and service performance.
+
+\subsection{System Parameters}
+
+A number of variables govern the functioning of the system. The most important include:
+
+\begin{itemize}
+    \item \textbf{Fleet size}: the total number of vehicles available in the system. This determines the potential capacity to satisfy user demand and directly influences availability and utilization.
+    \item \textbf{User arrival rate}: the rate at which users appear in the system, typically modeled as a stochastic process, such as a Poisson arrival with a given mean rate per unit time.
+    \item \textbf{Trip generation and distance}: the spatial distribution of trip origins and destinations, and the distance or duration of each trip. These parameters affect vehicle circulation and energy consumption.
+    \item \textbf{Charging infrastructure}: the number and location of charging stations, along with the charging rate, which constrains vehicle availability due to downtime during charging.
+    \item \textbf{Relocation frequency}: the frequency and magnitude of car relocations, which influences how effectively the system can respond to geographical imbalances in demand.
+\end{itemize}
+
+Each of these parameters can be varied in simulation experiments to assess their impact on overall service performance.
+
+\subsection{Performance Indicators}
+
+To evaluate the functioning of the car-sharing system, a set of key performance indicators (KPIs) is defined. These metrics provide quantitative measures of service quality, efficiency, and resource utilization:
+
+\begin{itemize}
+    \item \textbf{Availability rate}: the fraction of user requests that are successfully fulfilled by a nearby available vehicle.
+    \item \textbf{Average waiting time}: the expected time between a user’s arrival and the successful acquisition of a car.
+    \item \textbf{Vehicle utilization rate}: the proportion of time vehicles spend in active use compared to their total operational time.
+    \item \textbf{Charging station occupancy}: the average proportion of time charging facilities are occupied, indicating potential infrastructure bottlenecks.
+    \item \textbf{Relocation efficiency}: a measure of how effectively relocations improve service levels relative to their operational cost.
+\end{itemize}
+
+Together, these indicators provide a comprehensive picture of both user satisfaction and operational performance.
+
+\section{Model Design}
+
+The model must capture the essential behaviors of the car-sharing system while avoiding unnecessary complexity. The main entities to represent are the \textit{users}, \textit{vehicles}, and \textit{charging stations}. Each of these entities interacts according to defined rules and events, such as user arrivals, reservations, trip completions, charging operations, and relocations.
+
+\subsection{Essential Dynamics}
+
+The most important dynamics to include in the model are those that determine vehicle availability and user service levels. These include the spatial and temporal distribution of user requests, vehicle assignment logic, trip generation and completion, and the energy consumption and recharging processes. Incorporating these dynamics ensures that the model realistically represents how vehicles circulate through the network and how demand influences system congestion and availability.
+
+Secondary details—such as exact driving routes, user heterogeneity, or minor delays in parking—can be neglected at this stage without compromising analytical validity. The goal is to maintain a model that is simple enough for experimentation yet rich enough to capture the main performance drivers.
+
+\subsection{User Mobility Model}
+
+User mobility is modeled as a spatial stochastic process in which trip origins and destinations are generated randomly across the service area. Depending on the scale of analysis, this spatial distribution can be uniform or weighted by population density or activity zones. Travel distances are determined by the Euclidean or network distance between origin and destination points, possibly adjusted by time-of-day traffic multipliers.
+
+\subsection{Stationarity of User Mobility}
+
+In practice, user mobility patterns exhibit temporal variation, with distinct peaks during morning and evening hours. However, for analytical tractability, it is often reasonable to assume that over short simulation intervals, the system behaves in a \textit{stationary} manner, meaning that statistical properties such as arrival rate and spatial distribution remain constant. This assumption simplifies model validation and interpretation. Over longer horizons, a \textit{cycle-stationary} approach may be adopted, allowing parameters to vary periodically to represent daily demand cycles.
+
+\section{Data Structures}
+
+A suitable set of data structures is essential to efficiently represent the entities and events within the simulation. The choice of structures depends on the need for quick access to spatial information, vehicle states, and temporal event scheduling.
+
+\subsection{Entities}
+
+Each entity in the system can be represented as an object or structured record containing its relevant attributes:
+
+\begin{itemize}
+    \item \textbf{User}: contains information such as current location, desired destination, reservation status, and time of arrival.
+    \item \textbf{Vehicle}: stores attributes including current position, battery level, state (available, in use, charging, or reserved), and time since last relocation.
+    \item \textbf{Charging Station}: characterized by its geographic coordinates, number of charging points, queue of waiting vehicles, and current utilization level.
+\end{itemize}
+
+\subsection{Core Data Structures}
+
+To manage these entities and their interactions efficiently, several supporting data structures are employed:
+
+\begin{itemize}
+    \item A \textbf{priority queue} to handle the chronological sequence of events, ensuring that the simulation processes occurrences in correct temporal order.
+    \item A \textbf{spatial index} or lookup structure (for example, a grid or k-d tree) to enable rapid identification of the nearest available vehicle for a user request.
+    \item A \textbf{vehicle list} or dictionary to maintain global vehicle states and allow efficient updates during trips, charging, or relocation.
+    \item A \textbf{charging queue} for each station, storing vehicles waiting to recharge and managing service order.
+\end{itemize}
+
+These structures collectively enable an efficient event-driven simulation capable of managing large numbers of vehicles and users while preserving spatial and temporal realism.
+
+\section{Conclusion}
+
+The conceptual design developed in this laboratory defines the main elements necessary to simulate a car-sharing system with electric vehicles. It identifies the key parameters influencing system behavior, the performance indicators used to evaluate efficiency and service quality, and the essential dynamics governing user and vehicle interactions. 
+
+The proposed data structures and assumptions provide a solid foundation for subsequent implementation and experimentation. Future extensions may include refined user behavior models, predictive relocation strategies, and the introduction of time-dependent demand to further approximate real-world conditions.
+
+\end{document}

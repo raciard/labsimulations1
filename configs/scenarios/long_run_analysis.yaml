@@ -1,0 +1,6 @@
+# Longer simulation for better statistical analysis
+SIMULATION_END_TIME: 43200  # 30 days in minutes
+ENABLE_BINNING: true
+BIN_INTERVAL: 720  # Collect bins every 12 hours
+NUM_CARS: 25
+BASE_USER_ARRIVAL_RATE: 0.15  # More activity for better statistics

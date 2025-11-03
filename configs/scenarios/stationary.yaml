@@ -1,0 +1,56 @@
+# Scenario: Stationary System
+# All parameters remain constant over time - no time-varying traffic or demand
+# Focus: Automated transient phase detection
+
+# System type for analysis
+SYSTEM_TYPE: 'STATIONARY'
+
+# Disable all time-varying multipliers by making them all equal to 1.0
+TRAFFIC_TIME_MULTIPLIERS:
+  EARLY_MORNING: 1.0
+  MORNING_RUSH: 1.0
+  MIDDAY: 1.0
+  EVENING_RUSH: 1.0
+  EVENING: 1.0
+
+DEMAND_TIME_MULTIPLIERS:
+  EARLY_MORNING: 1.0
+  MORNING_RUSH: 1.0
+  MIDDAY: 1.0
+  EVENING_RUSH: 1.0
+  EVENING: 1.0
+
+# Disable rush hour multipliers in traffic zones
+TRAFFIC_ZONES:
+  city_center:
+    bounds: [30, 30, 70, 70]
+    base_traffic_factor: 1.5
+    description: "City center - constant traffic"
+    rush_hour_multiplier: 1.0
+  
+  industrial_area:
+    bounds: [0, 0, 30, 100]
+    base_traffic_factor: 1.2
+    description: "Industrial area - constant traffic"
+    rush_hour_multiplier: 1.0
+  
+  residential_area:
+    bounds: [70, 0, 100, 100]
+    base_traffic_factor: 1.0
+    description: "Residential area - constant traffic"
+    rush_hour_multiplier: 1.0
+  
+  shopping_district:
+    bounds: [30, 70, 70, 100]
+    base_traffic_factor: 1.3
+    description: "Shopping district - constant traffic"
+    rush_hour_multiplier: 1.0
+
+# Constant demand rate
+BASE_USER_ARRIVAL_RATE: 0.1  # Constant arrival rate
+
+# Run long enough to observe steady-state
+SIMULATION_END_TIME: 1008000 # 1 week = 7 days
+BIN_INTERVAL: 30 # 30 minutes for fine-grained analysis
+MAX_USERS: 100
+NUM_CARS: 20

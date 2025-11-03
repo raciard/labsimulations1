@@ -1,0 +1,3 @@
+# Scenario: high demand x2
+# Doubles base user arrival rate compared to default
+BASE_USER_ARRIVAL_RATE: 0.2

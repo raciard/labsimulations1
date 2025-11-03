@@ -1,0 +1,28 @@
+# Example simulation configuration overrides (YAML)
+# Only include keys you want to override. Keys must match the UPPERCASE
+# names in src/simulation/config.py
+
+# General
+SIMULATION_END_TIME: 525600 #(1 year)
+NUM_CARS: 30
+NUM_CHARGING_STATIONS: 6
+NUM_RELOCATORS: 4
+
+# User behavior
+BASE_USER_ARRIVAL_RATE: 0.25   # users per hour
+USER_RESERVATION_RATE: 0.3
+USER_PICKUP_RATE: 0.004
+MAX_USERS: 2000
+MAX_PICKUP_DISTANCE: 40.0
+
+# Charging
+CHARGING_POWER_MIN: 35
+CHARGING_POWER_MAX: 80
+
+# Traffic zones (override entirely if needed)
+# TRAFFIC_ZONES:
+#   center:
+#     bounds: [30, 30, 70, 70]
+#     base_traffic_factor: 2.2
+#     description: "Center - intenso"
+#     rush_hour_multiplier: 1.6
