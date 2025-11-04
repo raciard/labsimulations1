@@ -1,7 +1,7 @@
 \documentclass[12pt,a4paper]{article}
 
 \usepackage[utf8]{inputenc}
-\usepackage[margin=1in,headheight=15pt]{geometry}
+\usepackage[margin=1in,headheight=20pt]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -12,6 +12,8 @@
 \usepackage{enumitem}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
+\usepackage{float}
+\usepackage{array}
 
 % Color definitions
 \definecolor{primarycolor}{RGB}{0,102,204}
@@ -94,25 +96,26 @@
 \thispagestyle{empty}
 
 \begin{summarybox}
-\textbf{Laboratory Objectives:}
-\begin{itemize}[leftmargin=*]
-    \item Identify key system parameters and performance indicators
-    \item Design a balanced simulation model (accuracy vs. complexity)
-    \item Propose realistic user mobility patterns
-    \item Define appropriate data structures for simulation
-    \item Document all modeling assumptions
+\begin{center}\textbf{Laboratory Objectives:}\end{center}
+
+
+
+The purpose of this lab is to develop a simulation model that captures the dynamics of a car-sharing system. 
+
+
+In this system:
+\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
+\item{Users appear at various random locations and, using a smartphone app, identify and reserve an available car nearby.}
+\item{After reserving, users can drive the car to their destination and leave it either in designated parking spots (e.g. rechargeable stations) or any available space.}
+\item{Cars may be partially relocated to better align with demand when necessary.}
 \end{itemize}
 \end{summarybox}
 
 \vspace{1cm}
 
-\section*{Purpose of the Laboratory}
+\section*{Introduction}
 
-The purpose of this laboratory is to develop a simulation model that captures the operational dynamics of a \textbf{car-sharing system}. 
-
-In such a system, users appear at random locations within an urban area and use a smartphone application to locate and reserve a nearby available car. Once a reservation is successful, the user drives the car to the desired destination and leaves it either in a designated parking area, such as a recharging station, or in any permissible location within the operational zone.
-
-In addition to user-driven trips, cars can be partially relocated across the city to better align supply with spatial demand imbalances. This relocation mechanism is crucial to maintaining acceptable availability levels throughout the service area.
+The purpose of this laboratory is to develop a simulation model that captures the operational dynamics of a \textbf{car-sharing system} as described above. 
 
 
 The following sections identify the fundamental system parameters, define the main performance indicators, outline the conceptual model design, and describe the data structures required to support the simulation.
@@ -133,7 +136,9 @@ The whole system is represented as a collection of \textbf{entities} (users, veh
 
 Specifically, users are expected to sign up for the platform. Once registered, users will randomly make requests to rent a car, with random destinations inside the service area.
 
-\textbf{Reservation Process:}
+
+\vspace{0.75cm}
+\noindent\textbf{Reservation Process:}
 \begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
     \item User makes a car request at a random location
     \item System searches for available cars within a search radius
@@ -141,18 +146,56 @@ Specifically, users are expected to sign up for the platform. Once registered, u
     \item If no cars are available, user retries (up to a maximum number of attempts)
     \item After exhausting attempts, user abandons the request
 \end{enumerate}
-
-\subsection{Trip and Energy Dynamics}
-
-The time it takes to travel between the user's location and the destination depends on the \textcolor{keycolor}{\textbf{traffic conditions}} between those two points, which can change over time. During the trip, the car uses up energy based on the distance driven.
-
-
-If a car's battery is below a certain level at the end of a rental, it will be taken to be charged by a special worker called a \textit{relocator}. This person will pick up the car and drive it to the nearest charging station.
-
-
-Once the car is fully charged, it will be available for new rentals again.
+\vspace{0.5cm}
+\textbf{Rental Process:}
+\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
+    \item After a successful reservation, the user will get to the car's location after a certain walking time, which depends on the distance between the user's initial position and the car's position.
+    \item Then the user drives the car to the desired destination, the time taken will depend on the \textcolor{keycolor}{\textbf{traffic conditions}} between the two points, which can change over time.
+    \item During the trip, the car uses up energy based on the distance driven.
+    \item If a car's battery is below a certain level at the end of a rental, it will be taken to be charged by a special worker called a \textit{relocator}. This person will pick up the car and drive it to the nearest charging station.
+\end{enumerate}
 
 
+\subsection{Entities}
+
+The main entities of the car-sharing system are as follows:
+
+\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
+
+    \item \textbf{User}: contains information such as current location, desired destination, reservation status, and time of arrival.
+
+    \item \textbf{Vehicle}: stores attributes including current position, battery level, state (available, in use, charging, or reserved), and time since last relocation.
+
+    \item \textbf{Car Relocator}: a special worker responsible for relocating low-battery vehicles to charging stations.
+
+
+\end{itemize}
+
+
+
+\subsection{Events}
+The simulation operates through a series of discrete events that represent key moments in the system's operation:
+
+\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
+
+    \item \textbf{User Subscription Event}: A new user joins the car-sharing platform and becomes eligible to make reservations. This event triggers the scheduling of the user's first reservation attempt.
+
+    \item \textbf{Reservation Event}: A user attempts to find and reserve an available car near their current location. The system searches for the nearest car within an acceptable walking distance. If successful, the user proceeds to pick up the car; if no car is available, the user may retry after some time.
+
+    \item \textbf{Pickup Event}: A user walks to the reserved car's location and begins using it. This marks the start of a trip and records the walking time from reservation to pickup.
+
+    \item \textbf{Dropoff Event}: A user completes their trip and leaves the car at the destination. The system updates the car's location and battery charge based on the distance traveled. If the battery is low, the car is marked for relocation to a charging station.
+
+    \item \textbf{Relocate Car Event}: A car with low battery is assigned to a relocator (a worker who drives cars to charging stations). The system finds an available relocator and the nearest charging station, then schedules the car's arrival at the station.
+
+    \item \textbf{Arrive at Station with Relocator Event}: A relocator delivers a car to a charging station. The car enters the charging queue or begins charging immediately if a spot is available.
+
+    \item \textbf{Charging Complete Event}: A car finishes charging and its battery is fully restored. The car becomes available again for user reservations.
+
+
+\end{itemize}
+
+These events form a continuous cycle: users subscribe, make reservations, use cars, and return them, while the system manages car relocation and charging to maintain service availability.
 
 
 \section{Assumptions about the Model}
@@ -165,53 +208,65 @@ All modeling decisions involve trade-offs between realism and computational trac
 
 In order to create a manageable and effective simulation model for the car-sharing system, several key assumptions are made:
 
-\subsection{Spatial and Network Assumptions}
+\subsection{Service Area and Traffic Zones}
+
+The car-sharing service operates within a 100 km × 100 km urban area divided into multiple traffic zones. Each zone has distinct traffic characteristics that affect vehicle travel times and user experience:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{traffic_zones_map.pdf}
+\caption{\textbf{Traffic zones in the service area} - The map shows five distinct zones with different traffic patterns. The traffic factor indicates how much slower vehicles move compared to free-flow conditions, while the rush hour multiplier shows additional slowdown during peak hours.}
+\label{fig:traffic_zones}
+\end{figure}
 
 \begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
-    \item \textbf{Urban Area:} The service area is represented as a bounded two-dimensional space (10km $\times$ 10km) where users and vehicles can be located.
+    \item \textbf{Center Zone} (red): The city center experiences the heaviest congestion with a base traffic factor of 2.5×, meaning vehicles move 2.5 times slower than normal. During rush hours, this increases by an additional 1.5×.
     
-    \item \textbf{Road Network:} A graph structure represents the road network, with:
-    \begin{itemize}
-        \item \textit{Nodes} as intersection locations
-        \item \textit{Edges} as possible paths for vehicles
-        \item \textit{Weights} representing traffic conditions or travel time
-        \item Traffic conditions may vary over time (rush hours, etc.)
-    \end{itemize}
+    \item \textbf{Commercial Zone} (orange): Overlapping with the center, this area has medium-high traffic (1.8×) with moderate rush hour increases (1.3×).
+    
+    \item \textbf{Residential Zones} (blue/teal): Northwest and southeast residential areas have lighter traffic (0.7×) with modest rush hour increases (1.2×).
+    
+    \item \textbf{Industrial Zone} (green): The industrial area in the southwest corner has minimal traffic (0.5×) but experiences significant rush hour congestion (1.4×) due to shift changes.
 \end{itemize}
 
-\subsection{User Behavior Assumptions}
+These traffic patterns are incorporated into the road network simulation to provide realistic travel time estimates throughout the day.
+
+\subsection{Road Network Graph}
+
+To calculate realistic distances and travel times, the simulation uses a \textbf{graph structure} to represent the city's road network. This graph consists of:
 
 \begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
-    \item \textbf{Arrival Process:} User arrivals follow a \textcolor{keycolor}{Poisson process} with a time-varying average rate
-    
-    \item \textbf{Trip Pattern:} After signup, users request cars for trips to random destinations within the service area, following a Poisson request pattern
-    
-    \item \textbf{Assignment Logic:} Users are assigned to the \textit{nearest available car} within a search radius
-    
-    \item \textbf{Retry Mechanism:} If no car is available, users retry multiple times before abandoning the request
+    \item \textbf{Nodes} (intersections): Points where roads meet, placed on a grid across the city
+    \item \textbf{Edges} (roads): Connections between nodes that vehicles can travel along
 \end{itemize}
 
-\subsection{Vehicle and Infrastructure Assumptions}
+\begin{keybox}
+\textbf{Why do we need a graph?} Without a graph, the simulation would calculate distances "as the crow flies" (straight lines). But in real cities, cars must follow roads, making actual distances longer than straight-line distances.
+\end{keybox}
 
-\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
-    \item \textbf{Fleet Characteristics:}
-    \begin{itemize}
-        \item Fixed fleet size of electric vehicles
-        \item Each vehicle has maximum battery capacity (60 kWh)
-        \item Constant energy consumption rate per kilometer (0.15 kWh/km)
-    \end{itemize}
-    
-    \item \textbf{Charging Infrastructure:}
-    \begin{itemize}
-        \item Fixed number of charging stations distributed across the city
-        \item Each station has limited charging capacity
-        \item Charging rate: 7.2 kW (Level 2 AC charging)
-    \end{itemize}
-    
-    \item \textbf{Relocation:} Special workers (relocators) pick up low-battery vehicles and drive them to the nearest charging station
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{road_network_graph.pdf}
+\caption{\textbf{Road network graph and route calculation} - Left: The graph structure with nodes (intersections) and edges (roads). The blue path shows the shortest route calculated by the graph algorithm. Right: Comparison between unrealistic straight-line distance and realistic graph-based distance following actual roads.}
+\label{fig:road_network}
+\end{figure}
+
+\vspace{0.3cm}
+\noindent\textbf{How the graph works:}
+\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
+    \item When a user needs to travel from point A to point B, the system finds the nearest graph node to each point
+    \item An algorithm calculates the shortest path through the graph (the route with the smallest total distance)
+    \item The system adds up the distances along all roads in this path to get the total travel distance
+    \item Traffic factors from the zones are applied to calculate the actual travel time
+\end{enumerate}
+
+This approach makes the simulation much more realistic because:
+\begin{itemize}[leftmargin=*, label=\textcolor{keycolor}{$\checkmark$}]
+    \item Vehicles follow actual road paths instead of impossible straight lines
+    \item Distances are 15-40\% longer than straight-line distances (as in real cities)
+    \item Different routes can have different traffic conditions
+    \item The system can find the fastest path considering both distance and traffic
 \end{itemize}
-
-
 
 \section{Key Parameters and Performance Indicators}
 
@@ -219,65 +274,101 @@ The system is characterized by a set of parameters that define its operational c
 
 \subsection{System Parameters}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
-\begin{tabular}{@{}lp{10cm}@{}}
-\toprule
-\textcolor{primarycolor}{\textbf{Category}} & \textbf{Description} \\
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}p{4cm}p{10cm}@{}}
+\rowcolor{primarycolor!20}
+\textcolor{primarycolor}{\textbf{Parameter Category}} & \textcolor{primarycolor}{\textbf{Description \& Impact}} \\
 \midrule
-\textcolor{keycolor}{Fleet Size} & Total number of vehicles available in the system. Determines potential capacity and directly influences availability and utilization. \\[0.3cm]
-
-\textcolor{keycolor}{User Arrival Rate} & Rate at which users appear (Poisson process with mean rate per unit time). Affects system load and congestion. \\[0.3cm]
-
-\textcolor{keycolor}{Trip Distribution} & Spatial distribution of origins/destinations and trip distances. Affects vehicle circulation and energy consumption. \\[0.3cm]
-
-\textcolor{keycolor}{Charging Infrastructure} & Number and location of charging stations, plus charging rate. Constrains vehicle availability due to downtime. \\[0.3cm]
-
-\textcolor{keycolor}{Relocation Strategy} & Frequency and magnitude of vehicle relocations. Influences response to geographical demand imbalances. \\
+\rowcolor{keycolor!10}
+\textcolor{keycolor}{\textbf{Fleet Size}} & Total number of vehicles available in the system. Determines potential capacity and directly influences availability and utilization. Critical for balancing service quality vs. operational costs. \\
+\midrule
+\rowcolor{gray!5}
+\textcolor{keycolor}{\textbf{User Arrival Rate}} & Rate at which users appear (Poisson process with time-varying mean rate). Affects system load, congestion, and reservation success probability. \\
+\midrule
+\rowcolor{keycolor!10}
+\textcolor{keycolor}{\textbf{Trip Distribution}} & Spatial distribution of origins/destinations and trip distances. Affects vehicle circulation patterns, energy consumption, and geographic availability. \\
+\midrule
+\rowcolor{gray!5}
+\textcolor{keycolor}{\textbf{Charging Infrastructure}} & Number and location of charging stations, plus charging rate (7.2 kW). Constrains vehicle availability due to downtime and creates potential bottlenecks. \\
+\midrule
+\rowcolor{keycolor!10}
+\textcolor{keycolor}{\textbf{Relocation Strategy}} & Frequency and magnitude of vehicle relocations by dedicated workers. Influences response to geographical demand imbalances and operational efficiency. \\
 \bottomrule
 \end{tabular}
-\caption{Key system parameters influencing performance}
+\caption{\textbf{Key system parameters influencing performance} - Each parameter can be varied in scenario analysis to assess impact on service quality}
+\label{tab:parameters}
 \end{table}
 
-\textbf{Detailed Parameter Specifications:}
+\vspace{0.3cm}
 
-\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\circ$}]
-    \item \textbf{Fleet size:} Total number of vehicles available in the system (baseline: 20 cars)
-    
-    \item \textbf{User arrival rate:} Poisson process with time-varying rate (baseline: 0.15 users/hour)
-    
-    \item \textbf{Maximum registered users:} Platform capacity limit (50,000 users)
-    
-    \item \textbf{Traffic Conditions:} Time-dependent edge weights in road graph representing congestion
-    
-    \item \textbf{Charging infrastructure:} Number and location of stations with charging rate (5 stations, 7.2 kW)
-\end{itemize}
-
-\begin{keybox}
-Each of these parameters can be varied in simulation experiments to assess their impact on overall service performance through \textbf{scenario analysis}.
-\end{keybox}
-
-
-\subsection{Performance Indicators}
-
-
-To evaluate the functioning of the car-sharing system, a set of key performance indicators (KPIs) is defined:
-
-\begin{table}[h]
+\begin{table}[H]
 \centering
-\begin{tabular}{@{}lp{9cm}c@{}}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lcl@{}}
 \toprule
-\textcolor{keycolor}{\textbf{KPI}} & \textbf{Description} & \textbf{Target} \\
+\rowcolor{primarycolor!15}
+\textcolor{primarycolor}{\textbf{Parameter}} & \textcolor{primarycolor}{\textbf{Baseline Value}} & \textcolor{primarycolor}{\textbf{Range/Notes}} \\
 \midrule
-Availability Rate & Fraction of requests fulfilled by nearby vehicles & $>$ 80\% \\[0.2cm]
-Average Waiting Time & Time between arrival and car acquisition & $<$ 15 min \\[0.2cm]
-Vehicle Utilization & Time vehicles spend in active use & 60-80\% \\[0.2cm]
-Charging Occupancy & Proportion of time charging stations occupied & $<$ 80\% \\[0.2cm]
-Relocation Efficiency & Service improvement vs. operational cost & Maximized \\
+Fleet size & \textbf{20 cars} & 10-40 (scalability tests) \\
+\rowcolor{gray!5}
+User arrival rate & \textbf{0.15 users/hr} & Time-varying (rush hours) \\
+Max registered users & \textbf{50,000} & Platform capacity limit \\
+\rowcolor{gray!5}
+Search radius & \textbf{2 km} & Walking tolerance threshold \\
+Charging stations & \textbf{5 stations} & Spatially distributed \\
+\rowcolor{gray!5}
+Charging rate & \textbf{7.2 kW} & Level 2 AC charging \\
+Battery capacity & \textbf{60 kWh} & Per vehicle maximum \\
+\rowcolor{gray!5}
+Energy consumption & \textbf{0.15 kWh/km} & Realistic EV rate \\
+Number of relocators & \textbf{3 workers} & Automated rebalancing \\
 \bottomrule
 \end{tabular}
-\caption{Key Performance Indicators with target values}
+\caption{\textbf{Detailed parameter specifications} - Baseline configuration used for simulation experiments}
+\label{tab:param-specs}
 \end{table}
+
+\vspace{0.5cm}
+
+\section{Performance Indicators \& Target Values}
+
+To evaluate the functioning of the car-sharing system, a comprehensive set of key performance indicators (KPIs) is defined to measure service quality, operational efficiency, and user satisfaction:
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}p{3.5cm}p{7cm}p{2.5cm}@{}}
+\toprule
+\rowcolor{primarycolor!20}
+\textcolor{primarycolor}{\textbf{KPI Category}} & \textcolor{primarycolor}{\textbf{Description \& Measurement}} & \textcolor{primarycolor}{\textbf{Target Value}} \\
+\midrule
+\rowcolor{keycolor!10}
+\textcolor{keycolor}{\textbf{Availability Rate}} & Fraction of user requests that successfully find a nearby vehicle within search radius. Measures service coverage and demand satisfaction. & \textcolor{green!60!black}{\textbf{$>$ 80\%}} \\
+\midrule
+\rowcolor{gray!5}
+\textcolor{keycolor}{\textbf{Average Waiting Time}} & Mean time elapsed between user arrival and successful car acquisition (includes search and reservation). Critical for user experience. & \textcolor{green!60!black}{\textbf{$<$ 15 min}} \\
+\midrule
+\rowcolor{keycolor!10}
+\textcolor{keycolor}{\textbf{Vehicle Utilization}} & Percentage of time vehicles spend in active use vs. idle or charging. Indicates asset efficiency and fleet sizing. & \textcolor{orange!80!black}{\textbf{60-80\%}} \\
+\midrule
+\rowcolor{gray!5}
+\textcolor{keycolor}{\textbf{Charging Occupancy}} & Proportion of time charging stations are occupied. High values indicate potential bottlenecks in energy infrastructure. & \textcolor{orange!80!black}{\textbf{$<$ 80\%}} \\
+\midrule
+\rowcolor{keycolor!10}
+\textcolor{keycolor}{\textbf{Relocation Efficiency}} & Ratio of service improvement to operational cost of relocating vehicles. Balances proactive rebalancing vs. expenses. & \textcolor{blue!70!black}{\textbf{Maximized}} \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Key Performance Indicators with target values} - Metrics used to assess system performance across different scenarios}
+\label{tab:kpis}
+\end{table}
+
+\begin{notebox}
+\textbf{Note:} These KPIs are continuously monitored during simulation and used for transient detection and steady-state analysis. Target values represent industry-standard expectations for car-sharing services.
+\end{notebox}
+
+\vspace{0.3cm}
 
 Together, these indicators provide a comprehensive picture of both \textcolor{keycolor}{\textbf{user satisfaction}} and \textcolor{keycolor}{\textbf{operational performance}}.
 
@@ -316,6 +407,121 @@ To manage these entities and their interactions efficiently, several supporting 
 
 
 These structures collectively enable an efficient event-driven simulation capable of managing large numbers of vehicles and users while preserving spatial and temporal realism.
+
+\newpage
+
+\section{Experimental Scenarios and Results}
+
+To evaluate the car-sharing system under different operating conditions, we designed several scenarios by varying key parameters. Each scenario tests a specific aspect of system performance and helps us understand how different factors affect service quality.
+
+\subsection{Scenario Descriptions}
+
+The following scenarios were tested, each modifying specific parameters from the baseline configuration:
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}p{4cm}p{5cm}p{5cm}@{}}
+\toprule
+\rowcolor{primarycolor!20}
+\textcolor{primarycolor}{\textbf{Scenario}} & \textcolor{primarycolor}{\textbf{Parameter Changed}} & \textcolor{primarycolor}{\textbf{Purpose}} \\
+\midrule
+\rowcolor{gray!5}
+\textbf{Baseline} & Default values:\newline• 20 cars\newline• 0.15 users/hour\newline• 5 stations\newline• 20 km pickup radius & Establish reference performance for comparison \\
+\midrule
+\rowcolor{keycolor!10}
+\textbf{High Demand ×2} & User arrival rate doubled:\newline 0.15 → 0.30 users/hour & Test system behavior under increased demand stress \\
+\midrule
+\rowcolor{gray!5}
+\textbf{Large Fleet ×2} & Fleet size doubled:\newline 20 → 40 cars & Evaluate impact of increased vehicle supply on service quality \\
+\midrule
+\rowcolor{keycolor!10}
+\textbf{Wide Pickup Radius} & Maximum pickup distance:\newline 20 km → 45 km & Assess effect of users willing to walk further \\
+\midrule
+\rowcolor{gray!5}
+\textbf{Fewer Stations} & Charging stations reduced:\newline 5 → 2 stations & Test resilience to charging infrastructure constraints \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Experimental scenarios} - Each scenario isolates the effect of one parameter on system performance}
+\label{tab:scenarios}
+\end{table}
+
+\subsection{Key Results and Observations}
+
+Based on simulation results, we can draw several important conclusions about system behavior:
+
+\vspace{0.3cm}
+
+\begin{keybox}
+\textbf{Main Finding:} The car-sharing system's performance is most sensitive to the balance between vehicle supply (fleet size) and user demand (arrival rate). Infrastructure changes have secondary but still significant effects.
+\end{keybox}
+
+\vspace{0.5cm}
+
+\noindent\textbf{Scenario-Specific Observations:}
+
+\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
+
+    \item \textbf{High Demand ×2}: When user arrival rate doubles, the system experiences:
+    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
+        \item \textit{Lower success rate}: More reservation failures because cars are often in use
+        \item \textit{Higher attempts before success}: Users need to retry more times before finding a car
+        \item \textit{Increased utilization}: Cars spend more time in use and less time idle
+        \item \textit{Longer wait times}: More competition for available vehicles
+    \end{itemize}
+    \textcolor{notecolor}{\textbf{Lesson:}} The system becomes congested - demand exceeds supply capacity.
+
+    \vspace{0.3cm}
+
+    \item \textbf{Large Fleet ×2}: Doubling the number of cars results in:
+    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
+        \item \textit{Higher success rate}: Nearly all reservation requests succeed
+        \item \textit{Fewer retry attempts}: Cars are readily available
+        \item \textit{Lower utilization}: Many cars sit idle waiting for users
+        \item \textit{Minimal wait times}: Users quickly find nearby vehicles
+    \end{itemize}
+    \textcolor{notecolor}{\textbf{Lesson:}} More cars improve service quality but reduce efficiency (many idle vehicles).
+
+    \vspace{0.3cm}
+
+    \item \textbf{Wide Pickup Radius}: Allowing users to walk further shows:
+    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
+        \item \textit{Improved success rate}: More cars become "reachable" for each user
+        \item \textit{Longer walking times}: Users must walk further to reach cars
+        \item \textit{Better spatial coverage}: Cars in remote areas become usable
+    \end{itemize}
+    \textcolor{notecolor}{\textbf{Lesson:}} Flexible users can compensate for limited vehicle density, but at the cost of convenience.
+
+    \vspace{0.3cm}
+
+    \item \textbf{Fewer Stations}: Reducing charging infrastructure creates:
+    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
+        \item \textit{Longer charging queues}: Cars wait longer to charge
+        \item \textit{Higher station utilization}: Stations operate near capacity
+        \item \textit{More unavailable cars}: Cars stuck charging cannot serve users
+        \item \textit{Potential bottleneck}: System performance degrades if stations are overwhelmed
+    \end{itemize}
+    \textcolor{notecolor}{\textbf{Lesson:}} Charging infrastructure must scale with fleet size to avoid bottlenecks.
+
+\end{enumerate}
+
+\subsection{Design Implications}
+
+These results suggest several practical guidelines for system design:
+
+\begin{summarybox}
+\textbf{Operational Guidelines:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Fleet sizing}: Aim for 60-80\% utilization - too high indicates insufficient capacity, too low wastes resources
+    \item \textbf{Charging infrastructure}: Provide at least 1 station per 5-8 vehicles to prevent charging bottlenecks
+    \item \textbf{Service radius}: Balance between coverage (larger radius) and convenience (shorter walking distance)
+    \item \textbf{Demand management}: During peak periods, consider dynamic pricing or reservation prioritization
+\end{itemize}
+\end{summarybox}
+
+\vspace{0.3cm}
+
+The scenarios demonstrate that operating a car-sharing system requires careful tuning of multiple parameters. Simply adding more cars is not always the solution - it improves service quality but reduces economic efficiency. The optimal configuration depends on the specific goals: maximizing user satisfaction, minimizing costs, or finding a balance between the two.
 
 
 \section{Conclusion}
