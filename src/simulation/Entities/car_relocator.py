@@ -1,9 +1,7 @@
 import random
-from .Car import Car
-from .charging_station import ChargingStation
 from ..config import (
     NUM_RELOCATORS, RELOCATOR_SPEED_MIN, RELOCATOR_SPEED_MAX,
-    MAP_WIDTH, MAP_HEIGHT, format_time, logger
+    MAP_WIDTH, MAP_HEIGHT
 )
 
 
@@ -94,79 +92,3 @@ class CarRelocator:
         for i in range(num_relocators):
             speed = random.uniform(RELOCATOR_SPEED_MIN, RELOCATOR_SPEED_MAX)
             CarRelocator(i + 1, speed=speed)
-
-
-def relocate_car_event(time, payload, simulator):
-    """Evento per spostare una macchina verso una stazione di ricarica"""
-    car = payload
-    
-    # Trova un relocator disponibile
-    relocator = CarRelocator.get_available_relocator()
-    
-    if relocator is None:
-        # Nessun relocator disponibile, riprova più tardi
-        logger.warning(f"[{format_time(time)}] No relocator available for car {car.car_id}, retrying in 5 minutes")
-        retry_time = time + 5  # minutes
-        simulator.schedule_event(retry_time, relocate_car_event, car)
-        return
-    
-    # Trova la stazione di ricarica più vicina
-    station = ChargingStation.get_nearest_station(car.location)
-    
-    if station is None:
-        logger.error(f"[{format_time(time)}] No charging station available for car {car.car_id}")
-        return
-    
-    # Assegna il compito al relocator
-    if relocator.assign_task(car, station.location):
-        logger.info(
-            f"[{format_time(time)}] Relocator {relocator.relocator_id} assigned to move car {car.car_id} to station {station.station_id}"
-        )
-        
-        # Calcola il tempo necessario per raggiungere la stazione usando la mappa stradale
-        travel_time = relocator.calculate_travel_time(car.location, station.location, simulator.road_map)
-        
-        # Programma l'arrivo alla stazione
-        arrival_time = time + (travel_time * 60.0)  # convert hours to minutes
-        simulator.schedule_event(arrival_time, arrive_at_station_with_relocator_event, (car, station, relocator))
-    else:
-        logger.error(f"[{format_time(time)}] Failed to assign relocator {relocator.relocator_id} to car {car.car_id}")
-
-
-def arrive_at_station_with_relocator_event(time, payload, simulator):
-    """Evento quando una macchina arriva alla stazione di ricarica con un relocator"""
-    car, station, relocator = payload
-    
-    logger.info(f"[{format_time(time)}] Relocator {relocator.relocator_id} delivered car {car.car_id} to charging station {station.station_id}")
-    
-    # Completa il compito del relocator (record metrics before completing)
-    if relocator.current_task:
-        # metrics: relocator task was recorded here previously; removed
-        relocator.complete_task()
-
-    # metrics: charging_start was recorded here previously; removed
-    station.start_charging(car, time)
-    
-    # Calcola il tempo necessario per la ricarica completa
-    energy_needed = car.max_charge - car.charge_level
-    charging_time = energy_needed / station.charging_power  # in ore
-    
-    # Programma il completamento della ricarica
-    completion_time = time + (charging_time * 60.0)  # convert to minutes
-    simulator.schedule_event(completion_time, charging_complete_event, (car, station))
-
-
-def charging_complete_event(time, payload, simulator):
-    """Evento quando la ricarica è completata"""
-    car, station = payload
-    
-    logger.info(
-        f"[{format_time(time)}] Car {car.car_id} completed charging at station {station.station_id}"
-    )
-    
-    # Completa la ricarica
-    car.charge_level = car.max_charge
-    station.stop_charging(car, time)
-    
-    # La macchina è ora disponibile per nuovi viaggi
-    car.status = "available"

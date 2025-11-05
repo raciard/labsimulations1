@@ -8,6 +8,7 @@
 \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage{colortbl}
 \usepackage{tcolorbox}
 \usepackage{enumitem}
 \usepackage{fancyhdr}
@@ -84,11 +85,11 @@
     \vspace{-1cm}
     {\Huge\textbf{\textcolor{primarycolor}{Computer Aided Simulation Lab}}} \\[0.5cm]
     {\LARGE Simulation of a Car Sharing System} \\[0.3cm]
-    {\Large Labs 3 and 4}
+    {\Large Labs 2 and 3}
 }
 
 \author{Riccardo Bracciale \\ S338616}
-
+\date{}
 
 \begin{document}
 
@@ -96,7 +97,7 @@
 \thispagestyle{empty}
 
 \begin{summarybox}
-\begin{center}\textbf{Laboratory Objectives:}\end{center}
+\begin{center}\textbf{Lab 2 Assignment:}\end{center}
 
 
 
@@ -132,30 +133,6 @@ The following sections identify the fundamental system parameters, define the ma
 
 The whole system is represented as a collection of \textbf{entities} (users, vehicles, charging stations) that interact over time through a series of \textbf{events} (user arrivals, vehicle reservations, trip completions, charging operations, and relocations).
 
-\subsection{User Behavior Model}
-
-Specifically, users are expected to sign up for the platform. Once registered, users will randomly make requests to rent a car, with random destinations inside the service area.
-
-
-\vspace{0.75cm}
-\noindent\textbf{Reservation Process:}
-\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
-    \item User makes a car request at a random location
-    \item System searches for available cars within a search radius
-    \item User is assigned to the \textit{closest available car}
-    \item If no cars are available, user retries (up to a maximum number of attempts)
-    \item After exhausting attempts, user abandons the request
-\end{enumerate}
-\vspace{0.5cm}
-\textbf{Rental Process:}
-\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
-    \item After a successful reservation, the user will get to the car's location after a certain walking time, which depends on the distance between the user's initial position and the car's position.
-    \item Then the user drives the car to the desired destination, the time taken will depend on the \textcolor{keycolor}{\textbf{traffic conditions}} between the two points, which can change over time.
-    \item During the trip, the car uses up energy based on the distance driven.
-    \item If a car's battery is below a certain level at the end of a rental, it will be taken to be charged by a special worker called a \textit{relocator}. This person will pick up the car and drive it to the nearest charging station.
-\end{enumerate}
-
-
 \subsection{Entities}
 
 The main entities of the car-sharing system are as follows:
@@ -170,6 +147,36 @@ The main entities of the car-sharing system are as follows:
 
 
 \end{itemize}
+
+
+
+\subsection{Entities Behavior}
+
+Users are expected to sign up for the platform: in the simulation, they can be created all instantly at the beginning of the simulation or arrive over time according to a stochastic process.
+
+Once registered, users will randomly make requests to rent a car (following a stochastic process), with random destinations inside the service area.
+
+All the entities interact according to the following processes:
+
+\vspace{0.75cm}
+\noindent\textbf{Reservation Process:}
+\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
+    \item User makes a car request at a random location
+    \item System searches for available cars within a search radius
+    \item User is assigned to the \textit{closest available car}, if no cars are available, user retries (up to a maximum number of attempts)
+    \item After exhausting attempts, user abandons the request
+\end{enumerate}
+\vspace{0.5cm}
+\textbf{Rental Process:}
+\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
+    \item After a successful reservation, the user will get to the car's location after a certain walking time, which depends on the distance between the user's initial position and the car's position.
+    \item Then the user drives the car to the desired destination, the time taken will depend on the \textbf{traffic conditions} between the two points, which can change over time.
+    \item During the trip, the car uses up energy based on the distance driven.
+    \item If a car's battery is below a certain level at the end of a rental, it will be taken to be charged by a special worker called a \textit{relocator}. This person will pick up the car and drive it to the nearest charging station.
+\end{enumerate}
+
+
+\noindent These processes are implemented through the events described in the following section.
 
 
 
@@ -198,36 +205,27 @@ The simulation operates through a series of discrete events that represent key m
 These events form a continuous cycle: users subscribe, make reservations, use cars, and return them, while the system manages car relocation and charging to maintain service availability.
 
 
-\section{Assumptions about the Model}
+\section{Data Structures}
 
 \begin{notebox}
-All modeling decisions involve trade-offs between realism and computational tractability. The following assumptions define the boundaries of our simulation model.
+For a matter of simplicity, the service area is modeled as a flat 100 km × 100 km square without geographical obstacles. Realistic traffic patterns are simulated through predefined traffic zones that affect vehicle speeds and travel times. The map structure and the relative graph representations and traffic condition can be considered parameters of the simulation model.
 \end{notebox}
 
 \vspace{0.5cm}
 
-In order to create a manageable and effective simulation model for the car-sharing system, several key assumptions are made:
 
 \subsection{Service Area and Traffic Zones}
 
-The car-sharing service operates within a 100 km × 100 km urban area divided into multiple traffic zones. Each zone has distinct traffic characteristics that affect vehicle travel times and user experience:
+The car-sharing service operates within a certain urban area divided into multiple traffic zones. Each zone has distinct traffic characteristics that affect vehicle travel times and user experience.
+An example of a map used for most of our simulations is the following:
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{traffic_zones_map.pdf}
-\caption{\textbf{Traffic zones in the service area} - The map shows five distinct zones with different traffic patterns. The traffic factor indicates how much slower vehicles move compared to free-flow conditions, while the rush hour multiplier shows additional slowdown during peak hours.}
+\caption{\textbf{Traffic zones in the service area} - The map shows five distinct zones with different traffic patterns. The traffic factor, when present, indicates how much slower vehicles move compared to free-flow conditions, while the rush hour multiplier shows additional slowdown during peak hours.}
 \label{fig:traffic_zones}
 \end{figure}
 
-\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
-    \item \textbf{Center Zone} (red): The city center experiences the heaviest congestion with a base traffic factor of 2.5×, meaning vehicles move 2.5 times slower than normal. During rush hours, this increases by an additional 1.5×.
-    
-    \item \textbf{Commercial Zone} (orange): Overlapping with the center, this area has medium-high traffic (1.8×) with moderate rush hour increases (1.3×).
-    
-    \item \textbf{Residential Zones} (blue/teal): Northwest and southeast residential areas have lighter traffic (0.7×) with modest rush hour increases (1.2×).
-    
-    \item \textbf{Industrial Zone} (green): The industrial area in the southwest corner has minimal traffic (0.5×) but experiences significant rush hour congestion (1.4×) due to shift changes.
-\end{itemize}
 
 These traffic patterns are incorporated into the road network simulation to provide realistic travel time estimates throughout the day.
 
@@ -240,297 +238,249 @@ To calculate realistic distances and travel times, the simulation uses a \textbf
     \item \textbf{Edges} (roads): Connections between nodes that vehicles can travel along
 \end{itemize}
 
-\begin{keybox}
-\textbf{Why do we need a graph?} Without a graph, the simulation would calculate distances "as the crow flies" (straight lines). But in real cities, cars must follow roads, making actual distances longer than straight-line distances.
-\end{keybox}
+\begin{notebox}
+\textbf{}  
+While, in this simulation, users can park anywhere in the service area, it is assumed that the time taken will be computed as the time needed to travel along the edges from the nearest node to the user's location to the nearest node to the destination location. This allows us to simulate realistic travel times based on actual road layouts and traffic conditions, rather than straight-line distances. 
+\end{notebox}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{road_network_graph.pdf}
-\caption{\textbf{Road network graph and route calculation} - Left: The graph structure with nodes (intersections) and edges (roads). The blue path shows the shortest route calculated by the graph algorithm. Right: Comparison between unrealistic straight-line distance and realistic graph-based distance following actual roads.}
+\caption{\textbf{Road network graph and route calculation} - Left: The graph structure with nodes (intersections) and edges (roads). The blue path shows the route calculated by Dijkstra's algorithm. Right: Comparison between unrealistic straight-line distance and realistic graph-based distance following actual roads.}
 \label{fig:road_network}
 \end{figure}
 
 \vspace{0.3cm}
-\noindent\textbf{How the graph works:}
 \begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
     \item When a user needs to travel from point A to point B, the system finds the nearest graph node to each point
-    \item An algorithm calculates the shortest path through the graph (the route with the smallest total distance)
-    \item The system adds up the distances along all roads in this path to get the total travel distance
-    \item Traffic factors from the zones are applied to calculate the actual travel time
+    \item Each edge (road) is weighted by \textbf{travel time}.
+    \item Dijkstra's algorithm finds the path with the \textbf{minimum total travel time}
+    \item Roads in high-traffic zones get higher time weights, so the algorithm prefers faster alternative routes
 \end{enumerate}
 
-This approach makes the simulation much more realistic because:
-\begin{itemize}[leftmargin=*, label=\textcolor{keycolor}{$\checkmark$}]
-    \item Vehicles follow actual road paths instead of impossible straight lines
-    \item Distances are 15-40\% longer than straight-line distances (as in real cities)
-    \item Different routes can have different traffic conditions
-    \item The system can find the fastest path considering both distance and traffic
-\end{itemize}
+This approach means cars automatically avoid congested areas when faster routes exist, just like real drivers with GPS navigation.
 
-\section{Key Parameters and Performance Indicators}
 
-The system is characterized by a set of parameters that define its operational configuration and user behavior. These parameters form the foundation upon which the simulation is built and determine the relationships between demand, supply, and service performance.
-
-\subsection{System Parameters}
-
-\begin{table}[H]
-\centering
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{@{}p{4cm}p{10cm}@{}}
-\rowcolor{primarycolor!20}
-\textcolor{primarycolor}{\textbf{Parameter Category}} & \textcolor{primarycolor}{\textbf{Description \& Impact}} \\
-\midrule
-\rowcolor{keycolor!10}
-\textcolor{keycolor}{\textbf{Fleet Size}} & Total number of vehicles available in the system. Determines potential capacity and directly influences availability and utilization. Critical for balancing service quality vs. operational costs. \\
-\midrule
-\rowcolor{gray!5}
-\textcolor{keycolor}{\textbf{User Arrival Rate}} & Rate at which users appear (Poisson process with time-varying mean rate). Affects system load, congestion, and reservation success probability. \\
-\midrule
-\rowcolor{keycolor!10}
-\textcolor{keycolor}{\textbf{Trip Distribution}} & Spatial distribution of origins/destinations and trip distances. Affects vehicle circulation patterns, energy consumption, and geographic availability. \\
-\midrule
-\rowcolor{gray!5}
-\textcolor{keycolor}{\textbf{Charging Infrastructure}} & Number and location of charging stations, plus charging rate (7.2 kW). Constrains vehicle availability due to downtime and creates potential bottlenecks. \\
-\midrule
-\rowcolor{keycolor!10}
-\textcolor{keycolor}{\textbf{Relocation Strategy}} & Frequency and magnitude of vehicle relocations by dedicated workers. Influences response to geographical demand imbalances and operational efficiency. \\
-\bottomrule
-\end{tabular}
-\caption{\textbf{Key system parameters influencing performance} - Each parameter can be varied in scenario analysis to assess impact on service quality}
-\label{tab:parameters}
-\end{table}
-
-\vspace{0.3cm}
-
-\begin{table}[H]
-\centering
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{@{}lcl@{}}
-\toprule
-\rowcolor{primarycolor!15}
-\textcolor{primarycolor}{\textbf{Parameter}} & \textcolor{primarycolor}{\textbf{Baseline Value}} & \textcolor{primarycolor}{\textbf{Range/Notes}} \\
-\midrule
-Fleet size & \textbf{20 cars} & 10-40 (scalability tests) \\
-\rowcolor{gray!5}
-User arrival rate & \textbf{0.15 users/hr} & Time-varying (rush hours) \\
-Max registered users & \textbf{50,000} & Platform capacity limit \\
-\rowcolor{gray!5}
-Search radius & \textbf{2 km} & Walking tolerance threshold \\
-Charging stations & \textbf{5 stations} & Spatially distributed \\
-\rowcolor{gray!5}
-Charging rate & \textbf{7.2 kW} & Level 2 AC charging \\
-Battery capacity & \textbf{60 kWh} & Per vehicle maximum \\
-\rowcolor{gray!5}
-Energy consumption & \textbf{0.15 kWh/km} & Realistic EV rate \\
-Number of relocators & \textbf{3 workers} & Automated rebalancing \\
-\bottomrule
-\end{tabular}
-\caption{\textbf{Detailed parameter specifications} - Baseline configuration used for simulation experiments}
-\label{tab:param-specs}
-\end{table}
-
-\vspace{0.5cm}
-
-\section{Performance Indicators \& Target Values}
-
-To evaluate the functioning of the car-sharing system, a comprehensive set of key performance indicators (KPIs) is defined to measure service quality, operational efficiency, and user satisfaction:
-
-\begin{table}[H]
-\centering
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{@{}p{3.5cm}p{7cm}p{2.5cm}@{}}
-\toprule
-\rowcolor{primarycolor!20}
-\textcolor{primarycolor}{\textbf{KPI Category}} & \textcolor{primarycolor}{\textbf{Description \& Measurement}} & \textcolor{primarycolor}{\textbf{Target Value}} \\
-\midrule
-\rowcolor{keycolor!10}
-\textcolor{keycolor}{\textbf{Availability Rate}} & Fraction of user requests that successfully find a nearby vehicle within search radius. Measures service coverage and demand satisfaction. & \textcolor{green!60!black}{\textbf{$>$ 80\%}} \\
-\midrule
-\rowcolor{gray!5}
-\textcolor{keycolor}{\textbf{Average Waiting Time}} & Mean time elapsed between user arrival and successful car acquisition (includes search and reservation). Critical for user experience. & \textcolor{green!60!black}{\textbf{$<$ 15 min}} \\
-\midrule
-\rowcolor{keycolor!10}
-\textcolor{keycolor}{\textbf{Vehicle Utilization}} & Percentage of time vehicles spend in active use vs. idle or charging. Indicates asset efficiency and fleet sizing. & \textcolor{orange!80!black}{\textbf{60-80\%}} \\
-\midrule
-\rowcolor{gray!5}
-\textcolor{keycolor}{\textbf{Charging Occupancy}} & Proportion of time charging stations are occupied. High values indicate potential bottlenecks in energy infrastructure. & \textcolor{orange!80!black}{\textbf{$<$ 80\%}} \\
-\midrule
-\rowcolor{keycolor!10}
-\textcolor{keycolor}{\textbf{Relocation Efficiency}} & Ratio of service improvement to operational cost of relocating vehicles. Balances proactive rebalancing vs. expenses. & \textcolor{blue!70!black}{\textbf{Maximized}} \\
-\bottomrule
-\end{tabular}
-\caption{\textbf{Key Performance Indicators with target values} - Metrics used to assess system performance across different scenarios}
-\label{tab:kpis}
-\end{table}
-
-\begin{notebox}
-\textbf{Note:} These KPIs are continuously monitored during simulation and used for transient detection and steady-state analysis. Target values represent industry-standard expectations for car-sharing services.
-\end{notebox}
-
-\vspace{0.3cm}
-
-Together, these indicators provide a comprehensive picture of both \textcolor{keycolor}{\textbf{user satisfaction}} and \textcolor{keycolor}{\textbf{operational performance}}.
-
-\section{Entities}
-
-In this section, we examine the main entities of the car-sharing system and their interactions.
+\section{Key Parameters}
+The simulation of such a complex system has a huge variety of parameters, however in this experimentation, we will focus on this subset of key parameters:
 
 \begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
+    \item \textbf{Fleet Size}: amount of cars available in the system
+    \item \textbf{Maximum Pickup Radius}: maximum distance a user is willing to walk to reach a car
+    \item \textbf{Maximum amount of users}: limit on the total number of users in the system
+    \item \textbf{User Subscription Rate}: rate at which new users join the platform, if set to a very high value, all users sign in at the beginning of the simulation
+    \item \textbf{User Reservation Rate}: rate at which each user makes car rental requests
+    \item \textbf{Number of charging stations}: total number of charging stations available in the service area
+    \item \textbf{Number of relocators}: total number of relocators responsible for moving cars between locations
+\end{itemize}
 
-    \item \textbf{User}: contains information such as current location, desired destination, reservation status, and time of arrival.
+\section{Performance Indicators}
+To evaluate the performance of the car-sharing system, we will track the following key performance indicators (KPIs):
 
-    \item \textbf{Vehicle}: stores attributes including current position, battery level, state (available, in use, charging, or reserved), and time since last relocation.
-
-    \item \textbf{Charging Station}: characterized by its geographic coordinates, number of charging points, queue of waiting vehicles, and current utilization level.
+\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
+    \item \textbf{Fleet Utilization}: the percentage of the fleet in use at any given time, a car sharing company may want it to be both high enough to ensure profitability but not too high to avoid user dissatisfaction due to unavailability
+    \item \textbf{Successful Reservations Rate}: the ratio of successful car reservations to total reservation attempts, it should be as high as possible
+    \item \textbf{Average Walking Distance}: the average distance users walk to reach their reserved cars
+    \item \textbf{Average Attempts per Reservation}: the average number of attempts users make before successfully finding an available car, should be as close as possible to 1
 
 \end{itemize}
 
+\section{Implementation}
 
-\subsection{Core Data Structures}
+\begin{summarybox}
+    \begin{center}\textbf{Lab 2 Assignment:}\end{center}
+    The goal of this lab is to implement in Python  the simulator of the model developed in LAB 2.   You should also test your simulator, in a few scenarios and assess the impact of some input parameters (the choice of the subset of parameters to test is left to you) on the dynamics.
+\end{summarybox}
+
+As shown in the course this discrete-event simulation is implemented using a \textbf{Future Event Set (FES)}, which determines when and how things happen in the simulation.
 
 
-To manage these entities and their interactions efficiently, several supporting data structures are employed:
+\subsection{The Future Event Set (FES)}
+
+The FES is a \textbf{priority queue} that stores all scheduled events sorted by time. 
+
+\begin{keybox}
+\textbf{How the FES works:}
+\begin{enumerate}[leftmargin=*]
+    \item Events are added to the FES with a specific time when they should occur
+    \item The FES automatically keeps events sorted by time (earliest first)
+    \item The simulator repeatedly takes the next event from the FES and processes it
+    \item Processing an event may create new events, which are added back to the FES
+\end{enumerate}
+\end{keybox}
+
+\noindent\textbf{Example:} When a user subscribes at time 100, the simulator schedules a "reservation event" at time 120. When that reservation succeeds, it schedules a "pickup event" at time 125, which then schedules a "dropoff event" at time 180. If the dropoff causes the car to need charging, a "relocate car event" is scheduled at time 185, and so on.
+
+\subsection{Main Simulation Loop}
+
+The simulator follows a simple pattern:
+
+\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
+    \item \textbf{Initialize}: Create all entities (cars, stations, relocators, road network)
+    \item \textbf{Schedule initial events}: Add first user arrival to FES
+    \item \textbf{Main loop}: Repeat until simulation end time:
+    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
+        \item Get the next event from FES (the one with earliest time)
+        \item Check if event time exceeds simulation end time - if yes, stop
+        \item Execute the event (call its associated function)
+        \item The event function updates system state and schedules new events
+    \end{itemize}
+    \item \textbf{Finish}: Collect and report final metrics
+\end{enumerate}
 
 
-\begin{itemize}
 
-    \item A \textbf{priority queue} to handle the chronological sequence of events, ensuring that the simulation processes occurrences in correct temporal order.
 
-    \item A \textbf{spatial index} or lookup structure (for example, a grid or k-d tree) to enable rapid identification of the nearest available vehicle for a user request.
+\subsection{Project Structure}
 
-    \item A \textbf{vehicle list} or dictionary to maintain global vehicle states and allow efficient updates during trips, charging, or relocation.
+The python code is organized into logical modules that separate different concerns, following best practices of the object oriented programming paradigm: 
 
-    \item A \textbf{charging queue} for each station, storing vehicles waiting to recharge and managing service order.
-
+\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
+    \item \textbf{Entities/}: Classes representing active participants in the system (class definitions only)
+    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
+        \item \texttt{Car.py} - \texttt{Car} class: manages vehicle location, battery level, and status, implementing the corresponding entity.
+        \item \texttt{user.py} - \texttt{User} class: handles user initialization and attributes, implementing the corresponding entity.
+        \item \texttt{car\_relocator.py} - \texttt{CarRelocator} class: manages relocator availability and task assignment, implementing the correspoinding entity.
+    \end{itemize}
+    
+    \item \textbf{infrastructure/}: Classes for physical infrastructure (class definitions only)
+    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
+        \item \texttt{road\_map.py} - functions to build the road map graph and calculate routes and travel time
+        \item \texttt{charging\_station.py} - handles all interactions related to charging stations 
+    \end{itemize}
+    
+    \item \textbf{Core simulation files}:
+    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
+        \item \texttt{simulator.py} - Runs the simulation, implements the FES loop and coordinates all events
+        \item \texttt{events.py} - Here all the event functions are defined.
+        \item \texttt{config.py} - Configuration parameters and constants supports the loading of parameters from YAML files. 
+        \item \texttt{metrics.py} - \texttt{Metrics} utilities to collects statistics and performs transient analysis
+    \end{itemize}
 \end{itemize}
 
+\vspace{0.3cm}
+\noindent
+\subsection{Running instructions}
 
-These structures collectively enable an efficient event-driven simulation capable of managing large numbers of vehicles and users while preserving spatial and temporal realism.
+
+
+
+
 
 \newpage
 
 \section{Experimental Scenarios and Results}
 
-To evaluate the car-sharing system under different operating conditions, we designed several scenarios by varying key parameters. Each scenario tests a specific aspect of system performance and helps us understand how different factors affect service quality.
+To evaluate the car-sharing system under different operating conditions, we designed several experimental scenarios focusing on the impact of fleet size and user demand. All experiments were conducted with a 2-week simulation period (20,160 minutes) to allow the system to reach steady-state operation and provide statistically significant results.
 
-\subsection{Scenario Descriptions}
+\subsection{Experimental Design}
 
-The following scenarios were tested, each modifying specific parameters from the baseline configuration:
+\subsubsection{User Arrival Pattern}
+
+All scenarios use an \textbf{instant arrival pattern} where all users subscribe to the service at the simulation start. This approach:
+
+\begin{itemize}[leftmargin=*, label=\textcolor{primarycolor}{$\bullet$}]
+    \item Simulates a mature car-sharing service with an established user base
+    \item Eliminates the transient phase of gradual user adoption
+    \item Provides immediate system stress testing
+    \item Allows direct comparison of steady-state performance across scenarios
+\end{itemize}
+
+After arrival, users make reservation requests at a rate of 0.02 requests per hour (approximately one request every 50 hours per user), representing realistic usage patterns for occasional car-sharing service users.
+
+\subsubsection{Test Scenarios}
+
+Four scenarios were designed to systematically evaluate the system:
 
 \begin{table}[H]
 \centering
 \renewcommand{\arraystretch}{1.4}
-\begin{tabular}{@{}p{4cm}p{5cm}p{5cm}@{}}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
 \rowcolor{primarycolor!20}
-\textcolor{primarycolor}{\textbf{Scenario}} & \textcolor{primarycolor}{\textbf{Parameter Changed}} & \textcolor{primarycolor}{\textbf{Purpose}} \\
+\textbf{Scenario} & \textbf{Users} & \textbf{Cars} & \textbf{Ratio} \\
 \midrule
-\rowcolor{gray!5}
-\textbf{Baseline} & Default values:\newline• 20 cars\newline• 0.15 users/hour\newline• 5 stations\newline• 20 km pickup radius & Establish reference performance for comparison \\
-\midrule
-\rowcolor{keycolor!10}
-\textbf{High Demand ×2} & User arrival rate doubled:\newline 0.15 → 0.30 users/hour & Test system behavior under increased demand stress \\
-\midrule
-\rowcolor{gray!5}
-\textbf{Large Fleet ×2} & Fleet size doubled:\newline 20 → 40 cars & Evaluate impact of increased vehicle supply on service quality \\
-\midrule
-\rowcolor{keycolor!10}
-\textbf{Wide Pickup Radius} & Maximum pickup distance:\newline 20 km → 45 km & Assess effect of users willing to walk further \\
-\midrule
-\rowcolor{gray!5}
-\textbf{Fewer Stations} & Charging stations reduced:\newline 5 → 2 stations & Test resilience to charging infrastructure constraints \\
+Baseline & 20 & 20 & 1:1 &\\ 
+\rowcolor{gray!10}
+500 Users, 50 Cars & 500 & 50 & 10:1  \\
+2000 Users, 50 Cars & 2000 & 50 & 40:1 & \\
+\rowcolor{gray!10}
+5000 Users, 200 Cars & 5000 & 200 & 25:1 & \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Experimental scenarios} - Each scenario isolates the effect of one parameter on system performance}
+\caption{Experimental scenarios testing different user-to-car ratios and system scales.}
 \label{tab:scenarios}
 \end{table}
 
-\subsection{Key Results and Observations}
-
-Based on simulation results, we can draw several important conclusions about system behavior:
-
-\vspace{0.3cm}
-
-\begin{keybox}
-\textbf{Main Finding:} The car-sharing system's performance is most sensitive to the balance between vehicle supply (fleet size) and user demand (arrival rate). Infrastructure changes have secondary but still significant effects.
-\end{keybox}
-
-\vspace{0.5cm}
-
-\noindent\textbf{Scenario-Specific Observations:}
-
-\begin{enumerate}[leftmargin=*, label=\textcolor{primarycolor}{\arabic*.}]
-
-    \item \textbf{High Demand ×2}: When user arrival rate doubles, the system experiences:
-    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
-        \item \textit{Lower success rate}: More reservation failures because cars are often in use
-        \item \textit{Higher attempts before success}: Users need to retry more times before finding a car
-        \item \textit{Increased utilization}: Cars spend more time in use and less time idle
-        \item \textit{Longer wait times}: More competition for available vehicles
-    \end{itemize}
-    \textcolor{notecolor}{\textbf{Lesson:}} The system becomes congested - demand exceeds supply capacity.
-
-    \vspace{0.3cm}
-
-    \item \textbf{Large Fleet ×2}: Doubling the number of cars results in:
-    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
-        \item \textit{Higher success rate}: Nearly all reservation requests succeed
-        \item \textit{Fewer retry attempts}: Cars are readily available
-        \item \textit{Lower utilization}: Many cars sit idle waiting for users
-        \item \textit{Minimal wait times}: Users quickly find nearby vehicles
-    \end{itemize}
-    \textcolor{notecolor}{\textbf{Lesson:}} More cars improve service quality but reduce efficiency (many idle vehicles).
-
-    \vspace{0.3cm}
-
-    \item \textbf{Wide Pickup Radius}: Allowing users to walk further shows:
-    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
-        \item \textit{Improved success rate}: More cars become "reachable" for each user
-        \item \textit{Longer walking times}: Users must walk further to reach cars
-        \item \textit{Better spatial coverage}: Cars in remote areas become usable
-    \end{itemize}
-    \textcolor{notecolor}{\textbf{Lesson:}} Flexible users can compensate for limited vehicle density, but at the cost of convenience.
-
-    \vspace{0.3cm}
-
-    \item \textbf{Fewer Stations}: Reducing charging infrastructure creates:
-    \begin{itemize}[label=\textcolor{keycolor}{$\circ$}]
-        \item \textit{Longer charging queues}: Cars wait longer to charge
-        \item \textit{Higher station utilization}: Stations operate near capacity
-        \item \textit{More unavailable cars}: Cars stuck charging cannot serve users
-        \item \textit{Potential bottleneck}: System performance degrades if stations are overwhelmed
-    \end{itemize}
-    \textcolor{notecolor}{\textbf{Lesson:}} Charging infrastructure must scale with fleet size to avoid bottlenecks.
-
-\end{enumerate}
-
-\subsection{Design Implications}
-
-These results suggest several practical guidelines for system design:
-
-\begin{summarybox}
-\textbf{Operational Guidelines:}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Fleet sizing}: Aim for 60-80\% utilization - too high indicates insufficient capacity, too low wastes resources
-    \item \textbf{Charging infrastructure}: Provide at least 1 station per 5-8 vehicles to prevent charging bottlenecks
-    \item \textbf{Service radius}: Balance between coverage (larger radius) and convenience (shorter walking distance)
-    \item \textbf{Demand management}: During peak periods, consider dynamic pricing or reservation prioritization
+All scenarios maintain consistent infrastructure:
+\begin{itemize}[leftmargin=*, label=\textcolor{keycolor}{$\circ$}]
+    \item 5 charging stations distributed across the service area
+    \item 3 relocators for car redistribution
+    \item Maximum pickup distance: 3 km 
 \end{itemize}
-\end{summarybox}
 
-\vspace{0.3cm}
+\subsection{Performance Results}
 
-The scenarios demonstrate that operating a car-sharing system requires careful tuning of multiple parameters. Simply adding more cars is not always the solution - it improves service quality but reduces economic efficiency. The optimal configuration depends on the specific goals: maximizing user satisfaction, minimizing costs, or finding a balance between the two.
+\subsubsection{Comprehensive Metrics Table}
+The following table presents all key performance indicators across the four experimental scenarios:
 
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\rowcolor{primarycolor!20}
+\textbf{Metric} & \textbf{Baseline} & \textbf{500u/50c} & \textbf{2000u/50c} & \textbf{5000u/200c} \\
+\midrule
+\multicolumn{5}{l}{\textit{\textbf{Service Quality Indicators}}} \\
+\rowcolor{gray!10}
+Success Rate & 83.0\% & 91.5\% & 80.8\% & 81.2\% \\
+Total Reservations & 459 & 3,314 & 13,190 & 13,054 \\
+\rowcolor{gray!10}
+Avg Attempts & 1.00 & 1.01 & 1.05 & 1.05 \\
+Total Trips & 379 & 3,029 & 10,643 & 10,578 \\
+\midrule
+\multicolumn{5}{l}{\textit{\textbf{Fleet Performance Indicators}}} \\
+\rowcolor{gray!10}
+In-Use Rate & 0.1\% & 11.5\% & 41.4\% & 42.3\% \\
+Charging Rate & 0.1\% & 5.1\% & 19.6\% & 19.3\% \\
+\rowcolor{gray!10}
+Idle Rate & 99.8\% & 83.4\% & 39.0\% & 38.4\% \\
+\midrule
+\multicolumn{5}{l}{\textit{\textbf{Operational Indicators}}} \\
+\rowcolor{gray!10}
+Avg Trip Distance & 6.3 km & 6.0 km & 6.1 km & 6.0 km \\
+Total Distance & 2,390.9 km & 18,248.4 km & 64,436.1 km & 63,555.9 km \\
+\rowcolor{gray!10}
+Charging Sessions & 45 & 398 & 1,455 & 1,433 \\
+Avg Queue Length & 0.50 & 1.05 & 2.36 & 2.27 \\
+\bottomrule
+\end{tabular}
+\caption{Complete performance metrics for all experimental scenarios.}
+\label{tab:complete_results}
+\end{table}
+
+\subsubsection{Key Findings}
+
+Based on the data in Table \ref{tab:complete_results}, we can describe the scenarios based on user and car (c) counts.
+
+\begin{itemize}
+    \item The \textbf{Baseline} scenario shows a system with minimal activity, characterized by a 99.8\% Idle Rate. The specific user and car counts are not defined but activity is negligible.
+    \item The \textbf{500u/50c} scenario introduces 500 users and 50 cars. This configuration results in the highest Success Rate (91.5\%) but a relatively low fleet utilization (11.5\% In-Use Rate).
+    \item The \textbf{2000u/50c} scenario increases the user load to 2000 users while keeping the fleet at 50 cars. This high user-to-car ratio leads to a significant increase in fleet utilization (41.4\%) but also a drop in the Success Rate to 80.8\%.
+    \item The \textbf{5000u/200c} scenario scales up both users (5000) and cars (200). Interestingly, despite the four-fold increase in cars compared to the previous scenario, key metrics like the Success Rate (81.2\%) and In-Use Rate (42.3\%) remain remarkably similar to the 2000u/50c case.
+\end{itemize}
 
 \section{Conclusion}
 
+The experimental results presented in this report illustrate the complex dynamics between fleet size, user demand, and service performance. The data indicates that increasing the scale of the system, as seen when transitioning from the 2000u/50c to the 5000u/200c scenario, does not necessarily lead to proportional or intuitive changes in key performance indicators.
 
-The conceptual design developed in this laboratory defines the main elements necessary to simulate a car-sharing system with electric vehicles. It identifies the key parameters influencing system behavior, the performance indicators used to evaluate efficiency and service quality, and the essential dynamics governing user and vehicle interactions. 
+The similarity in performance between the last two scenarios, despite significantly different resource allocations, suggests that system behavior is governed by non-linear factors. These preliminary findings raise questions about operational bottlenecks and resource efficiency. Further investigation is required to fully understand the observed dynamics and to determine effective strategies for balancing service quality with fleet utilization.
+
+\end{document}
 
 
-The proposed data structures and assumptions provide a solid foundation for subsequent implementation and experimentation. Future extensions may include refined user behavior models, predictive relocation strategies, and the introduction of time-dependent demand to further approximate real-world conditions.
-
+\section{Conclusion}
 
 \end{document}

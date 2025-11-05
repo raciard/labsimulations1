@@ -88,7 +88,7 @@ def get_current_arrival_rate(time):
     return BASE_USER_ARRIVAL_RATE  # Default rate
 
 # Reservation process (Poisson)
-USER_RESERVATION_RATE = 1/48  # reservations per hour
+USER_RESERVATION_RATE = 1/4800  # reservations per hour
 
 # Car pickup process (Poisson)
 USER_PICKUP_RATE = 1/30  # pickups per hour
@@ -100,7 +100,7 @@ WALKING_SPEED = 50
 MAX_PICKUP_DISTANCE = 30.0  # * 0.1 km
 
 # Retry rate when no cars are available
-NO_CAR_RETRY_RATE = 1/50  # attempts per hour
+NO_CAR_RETRY_RATE = 60  # attempts per hour
 # How many reservation attempts a user will make before giving up
 USER_MAX_RESERVATION_ATTEMPTS = 3
 

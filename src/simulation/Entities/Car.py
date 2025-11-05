@@ -4,13 +4,13 @@ from ..config import (
     CAR_CONSUMPTION_VARIANCE, MAP_WIDTH, MAP_HEIGHT,
     format_time, format_distance, logger
 )
-
+from ..metrics import Metrics
 
 class Car:
     cars: list = []
 
     _id_counter: int = 0
-
+    
     @staticmethod
     def _get_next_id() -> int:
         Car._id_counter += 1
@@ -20,7 +20,7 @@ class Car:
         """Calculate energy consumption for a given distance"""
         return distance * (CAR_CONSUMPTION_BASE + random.uniform(-CAR_CONSUMPTION_VARIANCE, CAR_CONSUMPTION_VARIANCE))
 
-    def __init__(self):
+    def __init__(self, time=0):
         # random location
         # maximum charging level
         # status available by default
@@ -32,15 +32,55 @@ class Car:
         self.car_id = Car._get_next_id()
         self.total_distance = 0  # total distance traveled
         self.cars.append(self)
+        self.idle_time = 0
+        self.in_use_time = 0
+        self.last_state_change = time
+        self.charging_time = 0
 
     def update_location(self, new_location):
         self.location = new_location
 
-    def reserve(self):
+    def reserve(self, time):
         self.status = "reserved"
+        self.idle_time += time - self.last_state_change
+        self.last_state_change = time
+    
+    def start_use(self, time):
+        """Transition car to in_use state when user picks it up"""
+        if self.status == "reserved":
+            # No time to add since reserved is a transition state
+            pass
+        else:
+            # Track time in previous state
+            self.idle_time += time - self.last_state_change
+        
+        self.status = "in_use"
+        self.last_state_change = time
 
-    def free_up(self):
+    def free_up(self, time):
         self.status = "available"
+        self.in_use_time += time - self.last_state_change
+        self.last_state_change = time
+    
+    def start_charging(self, time):
+        """Transition car to charging state"""
+        if self.status != "charging":
+            # Track time in previous state
+            if self.status == "in_use":
+                self.in_use_time += time - self.last_state_change
+            elif self.status in ["available", "needs_charging", "discharged"]:
+                self.idle_time += time - self.last_state_change
+            
+            self.status = "charging"
+            self.last_state_change = time
+    
+    def stop_charging(self, time):
+        """Transition car out of charging state"""
+        if self.status == "charging":
+            self.charging_time += time - self.last_state_change
+            self.status = "available"
+            self.last_state_change = time
+
 
     def update_charge(self, distance, time=None):
         """Update the charge level based on distance traveled"""

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from . import config
 from .Entities import Car as car_mod
-from .Entities import charging_station as charging_station_mod
+from .infrastructure import charging_station as charging_station_mod
 from .Entities import car_relocator as car_relocator_mod
 
 

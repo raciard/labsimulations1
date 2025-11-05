@@ -9,9 +9,9 @@ from .metrics import Metrics
 from .visualization import SimulationVisualizer
 from .events import user_subscription_event, bin_collection_event
 from .Entities import Car as car_mod
-from .Entities import charging_station as charging_station_mod
+from .infrastructure import charging_station as charging_station_mod
 from .Entities import car_relocator as car_relocator_mod
-from .Entities import road_map as road_map_mod
+from .infrastructure import road_map as road_map_mod
 
 
 class Simulator:

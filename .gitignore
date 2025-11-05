@@ -59,7 +59,8 @@ simulation.log
 *.json
 
 # Plots (optional - comment out if you want to track these)
-# *.png
+#  src/simulation/infrastructure/
+#  *.png
 # *.pdf
 
 # Temporary files

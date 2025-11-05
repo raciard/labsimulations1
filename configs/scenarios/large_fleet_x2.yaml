@@ -1,3 +1,0 @@
-# Scenario: large fleet x2
-# Doubles number of cars compared to default (20 -> 40)
-NUM_CARS: 40

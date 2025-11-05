@@ -74,6 +74,7 @@ class RoadMap:
                 node_positions[node_id] = (x, y)
         
         # Crea connessioni orizzontali e verticali principali
+        # Edge weights represent DISTANCE only - traffic will be applied when calculating time
         for i in range(0, self.width + 1, grid_size):
             for j in range(0, self.height + 1, grid_size):
                 current_node = f"{i}_{j}"
@@ -84,7 +85,8 @@ class RoadMap:
                     if right_node in self.graph.nodes:
                         distance = self._calculate_distance(node_positions[current_node], 
                                                           node_positions[right_node])
-                        self.graph.add_edge(current_node, right_node, weight=distance)
+                        # Store distance as weight
+                        self.graph.add_edge(current_node, right_node, distance=distance)
                 
                 # Connessioni verticali
                 if j + grid_size <= self.height:
@@ -92,7 +94,8 @@ class RoadMap:
                     if down_node in self.graph.nodes:
                         distance = self._calculate_distance(node_positions[current_node], 
                                                           node_positions[down_node])
-                        self.graph.add_edge(current_node, down_node, weight=distance)
+                        # Store distance as weight
+                        self.graph.add_edge(current_node, down_node, distance=distance)
         
         # Aggiungi alcune strade diagonali principali per maggiore connettività
         self._add_diagonal_roads(node_positions)
@@ -115,7 +118,7 @@ class RoadMap:
         for node1, node2 in diagonal_connections:
             if node1 in self.graph.nodes and node2 in self.graph.nodes:
                 distance = self._calculate_distance(node_positions[node1], node_positions[node2])
-                self.graph.add_edge(node1, node2, weight=distance)
+                self.graph.add_edge(node1, node2, distance=distance)
     
     def find_nearest_node(self, x, y):
         """Trova il nodo più vicino a una posizione usando NetworkX"""
@@ -143,14 +146,14 @@ class RoadMap:
             return math.sqrt((start_pos[0] - end_pos[0])**2 + (start_pos[1] - end_pos[1])**2)
         
         try:
-            # Usa NetworkX per trovare il percorso più breve
-            path = nx.shortest_path(self.graph, start_node, end_node, weight='weight')
+            # Usa NetworkX per trovare il percorso più breve (by distance)
+            path = nx.shortest_path(self.graph, start_node, end_node, weight='distance')
             
             # Calcola la distanza totale del percorso
             total_distance = 0
             for i in range(len(path) - 1):
                 edge_data = self.graph[path[i]][path[i + 1]]
-                total_distance += edge_data['weight']
+                total_distance += edge_data['distance']
             
             return total_distance
             
@@ -158,35 +161,69 @@ class RoadMap:
             # Fallback alla distanza euclidea se non c'è percorso
             return math.sqrt((start_pos[0] - end_pos[0])**2 + (start_pos[1] - end_pos[1])**2)
     
-    def calculate_route_time(self, start_pos, end_pos, speed=30):
-        """Calcola il tempo necessario per percorrere un percorso considerando il traffico"""
-        distance = self.calculate_route_distance(start_pos, end_pos)
+    def calculate_route_time(self, start_pos, end_pos, speed=7/6, current_time=0):
+        """Calcola il tempo necessario per percorrere un percorso considerando il traffico.
         
-        # Trova il fattore di traffico medio lungo il percorso
+        Uses Dijkstra's algorithm to find the path with minimum travel TIME (not distance).
+        Edge weights are computed as: distance / (speed / traffic_factor)
+        
+        Args:
+            start_pos: Starting position (x, y)
+            end_pos: Ending position (x, y)
+            speed: Base driving speed in km/h
+            current_time: Current simulation time to determine traffic conditions
+            
+        Returns:
+            Travel time in hours
+        """
         start_node = self.find_nearest_node(start_pos[0], start_pos[1])
         end_node = self.find_nearest_node(end_pos[0], end_pos[1])
         
-        if start_node and end_node and start_node != end_node:
-            try:
-                path = nx.shortest_path(self.graph, start_node, end_node, weight='weight')
-                
-                # Calcola il fattore di traffico medio
-                total_traffic_factor = 0
-                for node_id in path:
-                    node_data = self.graph.nodes[node_id]
-                    total_traffic_factor += node_data['traffic_factor']
-                
-                avg_traffic_factor = total_traffic_factor / len(path)
-                
-                # Il tempo aumenta con il traffico
-                effective_speed = speed / avg_traffic_factor
-                return distance / effective_speed
-                
-            except nx.NetworkXNoPath:
-                pass
+        if start_node is None or end_node is None or start_node == end_node:
+            # Fallback to simple calculation
+            distance = math.sqrt((start_pos[0] - end_pos[0])**2 + (start_pos[1] - end_pos[1])**2)
+            return distance / speed
         
-        # Fallback
-        return distance / speed
+        try:
+            # Create a custom weight function that computes travel time for each edge
+            # Weight = time = distance / effective_speed
+            # where effective_speed = base_speed / traffic_factor
+            
+            def time_weight(u, v, edge_data):
+                # Get distance of this edge
+                distance = edge_data.get('distance', 1.0)
+                
+                # Get traffic factors at both nodes
+                node_u_data = self.graph.nodes[u]
+                node_v_data = self.graph.nodes[v]
+                
+                # Use average traffic factor for the edge
+                # (traffic factor slows down the vehicle)
+                avg_traffic_factor = (node_u_data['traffic_factor'] + node_v_data['traffic_factor']) / 2.0
+                
+                # Effective speed is reduced by traffic
+                effective_speed = speed / avg_traffic_factor
+                
+                # Time = distance / speed
+                travel_time = distance / effective_speed
+                
+                return travel_time
+            
+            # Use Dijkstra's algorithm to find shortest path by TIME (not distance)
+            path = nx.shortest_path(self.graph, start_node, end_node, weight=time_weight)
+            
+            # Calculate total travel time along the path
+            total_time = 0
+            for i in range(len(path) - 1):
+                edge_data = self.graph[path[i]][path[i + 1]]
+                total_time += time_weight(path[i], path[i + 1], edge_data)
+            
+            return total_time
+                
+        except nx.NetworkXNoPath:
+            # Fallback if no path exists
+            distance = math.sqrt((start_pos[0] - end_pos[0])**2 + (start_pos[1] - end_pos[1])**2)
+            return distance / speed
     
     def get_road_network_data(self):
         """Restituisce i dati della rete stradale per la visualizzazione usando NetworkX"""

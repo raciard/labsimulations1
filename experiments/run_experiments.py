@@ -81,13 +81,25 @@ def print_summary(results):
 
 
 def main():
-    scenarios = [
-        ("baseline", None),
-        ("high_demand_x2", ROOT / 'configs' / 'scenarios' / 'high_demand_x2.yaml'),
-        ("large_fleet_x2", ROOT / 'configs' / 'scenarios' / 'large_fleet_x2.yaml'),
-        ("wide_pickup_radius", ROOT / 'configs' / 'scenarios' / 'wide_pickup_radius.yaml'),
-        ("fewer_stations", ROOT / 'configs' / 'scenarios' / 'fewer_stations.yaml'),
-    ]
+    # Dynamically find all scenario YAML files
+    scenarios_dir = ROOT / 'configs' / 'scenarios'
+    scenario_files = sorted(scenarios_dir.glob('*.yaml'))
+    
+    # Filter out files with 'copy' in the name
+    scenario_files = [f for f in scenario_files if 'copy' not in f.name.lower()]
+    
+    # Create scenarios list: baseline (no config) + all YAML files
+    scenarios = [("baseline", None)]
+    
+    for scenario_file in scenario_files:
+        # Use filename without extension as scenario name
+        scenario_name = scenario_file.stem
+        scenarios.append((scenario_name, scenario_file))
+    
+    print(f"\nFound {len(scenarios)} scenarios to run:")
+    for name, path in scenarios:
+        print(f"  - {name}")
+    print()
 
     results = []
 

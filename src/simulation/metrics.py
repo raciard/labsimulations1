@@ -74,12 +74,9 @@ class Metrics:
     
     @staticmethod
     def record_car_state_time(state, duration):
-        """Record time a car spent in a given state"""
-        Metrics._total_car_time += duration
-        if state == "in_use":
-            Metrics._total_in_use_time += duration
-        elif state == "charging":
-            Metrics._total_charging_time += duration
+        """DEPRECATED: Car state time is now tracked directly in Car objects.
+        This method is kept for backward compatibility but does nothing."""
+        pass
     
     @staticmethod
     def record_station_queue(queue_length):
@@ -96,6 +93,14 @@ class Metrics:
     def snapshot_bin(time):
         """Capture a snapshot of current metrics for bin analysis.
         Stores the delta from the last snapshot to get per-bin statistics."""
+        from .Entities.Car import Car
+        
+        # Aggregate car utilization times from all cars
+        total_in_use_time = sum(car.in_use_time for car in Car.cars)
+        total_charging_time = sum(car.charging_time for car in Car.cars)
+        total_idle_time = sum(car.idle_time for car in Car.cars)
+        total_car_time = total_in_use_time + total_charging_time + total_idle_time
+        
         current_state = {
             'successful_reservations': Metrics._successful_reservations,
             'failed_reservations': Metrics._failed_reservations,
@@ -106,9 +111,9 @@ class Metrics:
             'total_trips': Metrics._total_trips,
             'total_trip_distance': Metrics._total_trip_distance,
             'total_attempts': Metrics._total_attempts_before_success,
-            'total_car_time': Metrics._total_car_time,
-            'total_in_use_time': Metrics._total_in_use_time,
-            'total_charging_time': Metrics._total_charging_time,
+            'total_car_time': total_car_time,
+            'total_in_use_time': total_in_use_time,
+            'total_charging_time': total_charging_time,
             'total_charging_sessions': Metrics._total_charging_sessions,
         }
         
@@ -150,6 +155,7 @@ class Metrics:
         logger.debug(f"[{format_time(time)}] Bin {len(Metrics._bins)} collected: "
                     f"{bin_data['bin_total_trips']} trips, "
                     f"success_rate={bin_data['bin_success_rate']*100:.1f}%")
+
     
     @staticmethod
     def get_bins():
@@ -711,18 +717,35 @@ class Metrics:
         return Metrics._total_attempts_before_success / Metrics._successful_reservations
     
     @staticmethod
+    @staticmethod
     def get_car_utilization_rate():
         """Get fraction of time cars spent being used vs total time"""
-        if Metrics._total_car_time == 0:
+        from .Entities.Car import Car
+        
+        total_in_use = 0.0
+        total_time = 0.0
+        for car in Car.cars:
+            total_in_use += car.in_use_time
+            total_time += car.in_use_time + car.charging_time + car.idle_time
+
+        if total_time == 0:
             return 0.0
-        return Metrics._total_in_use_time / Metrics._total_car_time
-    
+        return total_in_use / total_time
+
     @staticmethod
     def get_charging_rate():
         """Get fraction of time cars spent charging vs total time"""
-        if Metrics._total_car_time == 0:
+        from .Entities.Car import Car
+        
+        total_charging = 0.0
+        total_time = 0.0
+        for car in Car.cars:
+            total_charging += car.charging_time
+            total_time += car.in_use_time + car.charging_time + car.idle_time
+        
+        if total_time == 0:
             return 0.0
-        return Metrics._total_charging_time / Metrics._total_car_time
+        return total_charging / total_time
     
     @staticmethod
     def get_average_queue_length():

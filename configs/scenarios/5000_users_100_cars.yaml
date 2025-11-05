@@ -1,0 +1,23 @@
+
+# Baseline Configuration
+# Standard parameters for comparison - all other scenarios vary from this baseline
+
+# Simulation duration: 1 week for reasonable experiment time
+SIMULATION_END_TIME: 20160  # 2 week in minutes
+
+# Fleet configuration
+NUM_CARS: 50 
+
+# User behavior
+BASE_USER_ARRIVAL_RATE: 100000  #all users arrive instantly at start
+USER_RESERVATION_RATE: 0.02  # reservations per hour (1 every ~4800 hours per user)
+MAX_USERS: 2000
+MAX_PICKUP_DISTANCE: 30.0  # (display units: 3.0 km)
+
+# Infrastructure
+NUM_CHARGING_STATIONS: 5
+NUM_RELOCATORS: 3
+
+# Analysis settings
+ENABLE_BINNING: true
+BIN_INTERVAL: 60  # 1 hour snapshots
